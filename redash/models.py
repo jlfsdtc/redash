@@ -1405,6 +1405,7 @@ class Dashboard(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model
                  (Dashboard.user_id == user.id) |
                  ((Widget.dashboard != None) & (Widget.visualization == None))),
                 Dashboard.org == org)
+            .distinct()
             .group_by(tag_column))
 
         query = query.filter(or_(Dashboard.user_id == user.id, Dashboard.is_draft == False))
