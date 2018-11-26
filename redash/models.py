@@ -1394,21 +1394,30 @@ class Dashboard(ChangeTrackingMixin, TimestampMixin, BelongsToOrgMixin, db.Model
         usage_count = func.count(1).label('usage_count')
 
         query = (
-            db.session.query(tag_column, usage_count)
+            db.session
+            .query(tag_column, usage_count)
             .outerjoin(Widget)
             .outerjoin(Visualization)
             .outerjoin(Query)
-            .outerjoin(DataSourceGroup, Query.data_source_id == DataSourceGroup.data_source_id)
+            .outerjoin(
+                DataSourceGroup,
+                Query.data_source_id == DataSourceGroup.data_source_id
+            )
             .filter(
-                Dashboard.is_archived == False,
-                (DataSourceGroup.group_id.in_(user.group_ids) |
-                 (Dashboard.user_id == user.id) |
-                 ((Widget.dashboard != None) & (Widget.visualization == None))),
-                Dashboard.org == org)
+                Dashboard.is_archived == False, (
+                    DataSourceGroup.group_id.in_(user.group_ids) |
+                    (Dashboard.user_id == user.id) | (
+                        (Widget.dashboard != None) &
+                        (Widget.visualization == None)
+                    )
+                ),
+                Dashboard.org == org, (
+                    (Dashboard.user_id == user.id) |
+                    (Dashboard.is_draft == False)
+                )
+            )
             .distinct()
             .group_by(tag_column))
-
-        query = query.filter(or_(Dashboard.user_id == user.id, Dashboard.is_draft == False))
 
         return query.order_by(usage_count.desc())
 
